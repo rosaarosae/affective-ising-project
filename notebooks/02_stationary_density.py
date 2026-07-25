@@ -25,7 +25,7 @@ points = 100
 x, y, X, Y, stationary_density, z = calculate_stationary_density(
     points
 )
-
+#we integrate as the stationary density is a function of two variables, we integrate first over x and then over y to get the total probability
 # %%
 integral_check_x = np.trapezoid(
     stationary_density,
