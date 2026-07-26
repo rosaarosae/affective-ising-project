@@ -77,7 +77,7 @@ N_runs = 20 #we first use 20 runs as a pilot experiment
 
 initial_state = np.array([0.96, 0.04])
 dt = 0.0005
-final_time = 20
+final_time = 50
 D = 0.01
 
 #we define the two negative inputs
