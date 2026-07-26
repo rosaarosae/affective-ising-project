@@ -40,7 +40,7 @@ print("Deepest m into negative for trajectory 1:", deepest_m_into_negative(traje
 print("Deepest m into negative for trajectory 2:", deepest_m_into_negative(trajectory2))
 # %%
 # now for N runs
-N_runs = 20 #we first use 20 runs as a pilot experiment
+N_runs = 100
 
 #we define the two negative inputs
 def weak_input(t):
@@ -169,10 +169,13 @@ for i in range(N_runs):
 # %%
 print(f"Control fraction ending in negative basin: {np.sum(ending_in_negative) / N_runs}")
 # %%
+plt.figure(figsize=(7, 5))
 plt.hist(deepest_m_values, bins=20)
 plt.title("Histogram of deepest m into negative basin")
 plt.xlabel("Deepest m value")
 plt.ylabel("Frequency")
+plt.show()
+plt.close()
 # %%
 fraction_below_threshold = []
 for threshold in np.linspace(-1, 1, 500):
@@ -185,6 +188,8 @@ plt.title("Fraction of trajectories with deepest m below threshold")
 plt.xlabel("Threshold")
 plt.ylabel("Fraction")
 plt.ylim(0, 1)
+plt.show()
+plt.close()
 
 # %%
 #we calculate the proportion of trajectories that end in the negative basin
@@ -247,26 +252,6 @@ switching_probabilities = [
     weak_probability,
     strong_probability
 ]
-
-plt.figure(figsize=(7, 5))
-
-plt.bar(
-    condition_names,
-    switching_probabilities,
-    color=["grey", "green", "red"]
-)
-
-plt.ylabel("Switching probability")
-plt.title("Probability of ending in the negative-affect basin")
-plt.ylim(0, 1)
-
-plt.savefig(
-    PROJECT_ROOT / "results/figures/monte_carlo_switching.png",
-    dpi=300,
-    bbox_inches="tight"
-)
-
-plt.show()
 # %%
 #we draw the recovery outcomes for the strong negative input
 
@@ -310,3 +295,98 @@ plt.savefig(
 )
 
 plt.show()
+plt.close()
+# %%
+#finally, we calculate the confidence intervals for the switching probabilities using the Wilson score interval
+from statsmodels.stats.proportion import proportion_confint
+control_switch_count=np.sum(ending_in_negative) #these values just count the number of trajectories that ended in the negative basin for each condition
+weak_switch_count=np.sum(weak_switches)
+strong_switch_count=np.sum(strong_switches)
+
+#now we calculate the confidence intervals
+#now we calculate the 95% confidence intervals
+control_ci = proportion_confint(control_switch_count, N_runs, 0.05, method='wilson')
+weak_ci = proportion_confint(weak_switch_count, N_runs, 0.05, method='wilson')
+strong_ci = proportion_confint(strong_switch_count, N_runs, 0.05, method='wilson')
+
+print("Control 95% confidence interval:", control_ci)
+print("Weak-input 95% confidence interval:", weak_ci)
+print("Strong-input 95% confidence interval:", strong_ci)
+
+#we prepare the results for printing
+confidence_intervals = [
+    control_ci,
+    weak_ci,
+    strong_ci
+]
+
+switching_probabilities = [
+    control_probability,
+    weak_probability,
+    strong_probability
+]
+
+lower_errors = []
+upper_errors = []
+
+for probability, interval in zip(
+    switching_probabilities,
+    confidence_intervals
+):
+    lower, upper = interval
+
+    lower_errors.append(
+        probability - lower
+    )
+
+    upper_errors.append(
+        upper - probability
+    )
+
+confidence_errors = np.array([
+    lower_errors,
+    upper_errors
+])
+#now we plot the switching probabilities with error bars
+plt.figure(figsize=(6.5, 4.5))
+bars = plt.bar(
+    condition_names,
+    switching_probabilities,
+    color=["grey", "green", "red"],
+    yerr=confidence_errors,
+    capsize=6,
+    width=0.55,
+    edgecolor="black",
+    linewidth=0.8
+)
+
+for bar, probability, interval in zip(
+    bars,
+    switching_probabilities,
+    confidence_intervals
+):
+    upper_limit = interval[1]
+    plt.text(
+        bar.get_x() + bar.get_width() / 2,
+        upper_limit + 0.025,
+        f"{probability:.2f}",
+        ha="center",
+        va="bottom"
+    )
+
+plt.ylabel("Switching probability")
+plt.title("Switching probability by input condition")
+plt.ylim(0, 1)
+plt.grid(axis="y", alpha=0.25)
+
+plt.savefig(
+    PROJECT_ROOT
+    / "results"
+    / "figures"
+    / "monte_carlo_switching.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
+plt.show()
+plt.close()
