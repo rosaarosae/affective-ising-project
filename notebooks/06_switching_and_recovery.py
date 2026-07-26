@@ -8,24 +8,29 @@ import matplotlib.pyplot as plt
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_PATH = PROJECT_ROOT / "src"
 sys.path.insert(0, str(SRC_PATH))
-import numpy as np
 from aim.simulation import euler_maruyama
 from aim.metrics import classify_basin, does_trajectory_end_in_negative_basin, deepest_m_into_negative, recovery_time_after_negative_input, classify_recovery_outcome
 from aim.inputs import rectangular_negative_input
 
+#we use the same simulation parameters throughout this file
+initial_state = np.array([0.96, 0.04])
+dt = 0.0005
+final_time = 50
+D = 0.01
+
 #%%
 times1, trajectory1 = euler_maruyama(
     y0=np.array([0.96, 0.04]),
-    dt=0.0005,
-    T=100,      
-    D=0.01,
+    dt=dt,
+    T=final_time,
+    D=D,
     seed=42
 )
 times2, trajectory2 = euler_maruyama(
     y0=np.array([0.04, 0.96]),
-    dt=0.0005,
-    T=100,      
-    D=0.01,
+    dt=dt,
+    T=final_time,
+    D=D,
     seed=42
 )
 #%%
@@ -35,50 +40,7 @@ print("Deepest m into negative for trajectory 1:", deepest_m_into_negative(traje
 print("Deepest m into negative for trajectory 2:", deepest_m_into_negative(trajectory2))
 # %%
 # now for N runs
-N_runs = 20
-ending_in_negative = []
-deepest_m_values = []
-for i in range(N_runs):
-    print(f"Run {i+1}/{N_runs}")
-    times, trajectory = euler_maruyama(
-        y0=np.array([0.96, 0.04]),
-        dt=0.0005,
-        T=100,      
-        D=0.01,
-        seed=i
-    )
-    ending_in_negative.append(does_trajectory_end_in_negative_basin(trajectory))
-    deepest_m_values.append(deepest_m_into_negative(trajectory))
-    
-# %%
-print(f"Fraction of trajectories ending in negative basin: {np.sum(ending_in_negative) / N_runs}")
-# %%
-plt.hist(deepest_m_values, bins=20)
-plt.title("Histogram of deepest m into negative basin")
-plt.xlabel("Deepest m value")
-plt.ylabel("Frequency")
-# %%
-fraction_below_threshold = []
-for threshold in np.linspace(-1, 1, 500):
-    fraction_below_threshold.append(
-        np.sum(np.array(deepest_m_values) < threshold) / N_runs
-    )
-plt.figure()
-plt.plot(np.linspace(-1, 1, 500), fraction_below_threshold, marker='o', ms=2, ls='')
-plt.title("Fraction of trajectories with deepest m below threshold")
-plt.xlabel("Threshold")
-plt.ylabel("Fraction")
-plt.ylim(0, 1)
-    
-# %%
-# now we compare the control, weak input and strong input with several random seeds
-
 N_runs = 20 #we first use 20 runs as a pilot experiment
-
-initial_state = np.array([0.96, 0.04])
-dt = 0.0005
-final_time = 50
-D = 0.01
 
 #we define the two negative inputs
 def weak_input(t):
@@ -99,8 +61,9 @@ def strong_input(t):
     )
 
 
-#we create three lists to save if every trajectory ends in the negative basin
-control_switches = []
+#we create lists to save the results from the three conditions
+ending_in_negative = []
+deepest_m_values = []
 weak_switches = []
 strong_switches = []
 control_recovery_times = []
@@ -110,7 +73,7 @@ strong_recovery_outcomes = []
 
 #we use the same seed for the three conditions in every run
 for i in range(N_runs):
-    print("Run:", i + 1, "of", N_runs)
+    print(f"Run {i+1}/{N_runs}")
 
     times_control, trajectory_control = euler_maruyama(
         y0=initial_state,
@@ -139,8 +102,14 @@ for i in range(N_runs):
         negative_input=strong_input
     )
 
-    control_switches.append(
+    ending_in_negative.append(
         does_trajectory_end_in_negative_basin(
+            trajectory_control
+        )
+    )
+
+    deepest_m_values.append(
+        deepest_m_into_negative(
             trajectory_control
         )
     )
@@ -197,11 +166,30 @@ for i in range(N_runs):
         )
     )
 
+# %%
+print(f"Control fraction ending in negative basin: {np.sum(ending_in_negative) / N_runs}")
+# %%
+plt.hist(deepest_m_values, bins=20)
+plt.title("Histogram of deepest m into negative basin")
+plt.xlabel("Deepest m value")
+plt.ylabel("Frequency")
+# %%
+fraction_below_threshold = []
+for threshold in np.linspace(-1, 1, 500):
+    fraction_below_threshold.append(
+        np.sum(np.array(deepest_m_values) < threshold) / N_runs
+    )
+plt.figure()
+plt.plot(np.linspace(-1, 1, 500), fraction_below_threshold, marker='o', ms=2, ls='')
+plt.title("Fraction of trajectories with deepest m below threshold")
+plt.xlabel("Threshold")
+plt.ylabel("Fraction")
+plt.ylim(0, 1)
 
 # %%
 #we calculate the proportion of trajectories that end in the negative basin
 
-control_probability = np.sum(control_switches) / N_runs
+control_probability = np.sum(ending_in_negative) / N_runs
 weak_probability = np.sum(weak_switches) / N_runs
 strong_probability = np.sum(strong_switches) / N_runs
 
@@ -274,6 +262,49 @@ plt.ylim(0, 1)
 
 plt.savefig(
     PROJECT_ROOT / "results/figures/monte_carlo_switching.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
+plt.show()
+# %%
+#we draw the recovery outcomes for the strong negative input
+
+recovery_names = [
+    "Persistent\nrecovery",
+    "Temporary\nrecovery",
+    "Never\nrecovered"
+]
+
+recovery_counts = [
+    number_persistent_recovery,
+    number_temporary_recovery,
+    number_never_recovered
+]
+
+plt.figure(figsize=(7, 5))
+
+bars = plt.bar(
+    recovery_names,
+    recovery_counts,
+    color=["green", "orange", "red"]
+)
+
+#we write the number of trajectories above each bar
+for bar, count in zip(bars, recovery_counts):
+    plt.text(
+        bar.get_x() + bar.get_width() / 2,
+        bar.get_height() + 0.2,
+        str(count),
+        ha="center"
+    )
+
+plt.ylabel("Number of trajectories")
+plt.title("Recovery outcomes after the strong negative input")
+plt.ylim(0, N_runs + 2)
+
+plt.savefig(
+    PROJECT_ROOT / "results/figures/recovery_outcomes.png",
     dpi=300,
     bbox_inches="tight"
 )
