@@ -235,19 +235,5 @@ axes[3].set_ylabel("B2(t)")
 axes[3].legend()
 
 plt.tight_layout()
-
-figure_path = (
-    PROJECT_ROOT
-    / "results"
-    / "figures"
-    / "negative_input_trajectories_t20.png"
-)
-
-plt.savefig(
-    figure_path,
-    dpi=300,
-    bbox_inches="tight"
-)
-
 plt.show()
 

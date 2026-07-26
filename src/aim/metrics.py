@@ -30,3 +30,14 @@ def deepest_m_into_positive(trajectory):
     y2 = trajectory[:, 1]
     m = y1-y2
     return np.max(m)
+
+
+def recovery_time_after_negative_input(times, trajectory, start, duration, window=100):
+    input_end_time = start + duration
+    # Find the index where the input ends
+    end_index = np.searchsorted(times, input_end_time)
+    # Search for the first period where y1 > y2 for 'window' consecutive steps
+    for i in range(end_index, len(trajectory) - window + 1):
+        if np.all(trajectory[i:i + window, 0] > trajectory[i:i + window, 1]):
+            return times[i] - input_end_time  # Recovery time is relative to input end
+    return np.nan  # Return NaN if recovery does not occur within the simulation

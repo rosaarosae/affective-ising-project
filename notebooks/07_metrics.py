@@ -35,3 +35,22 @@ if __name__ == "__main__":
     print(does_trajectory_end_in_negative_basin(trajectory))  # True
     print(deepest_m_into_negative(trajectory))
     print(deepest_m_into_positive(trajectory))
+
+     
+# Recovery time represents how long the simulated affective state needs to
+# return to the positive-affect basin after the negative input has ended.
+# The input ends at t = start + duration. From that moment, we search for
+# the first period in which positive affect y1 remains greater than negative
+# affect y2 for several consecutive steps. We use a window because a single
+# point with y1 > y2 could only be a short random fluctuation. If the system
+# does not return during the simulation, the recovery time is recorded as NaN.
+# This is an abstract model measure and does not represent hours or days.
+def recovery_time_after_negative_input(times, trajectory, start, duration, window=100):
+    input_end_time = start + duration
+    # Find the index where the input ends
+    end_index = np.searchsorted(times, input_end_time)
+    # Search for the first period where y1 > y2 for 'window' consecutive steps
+    for i in range(end_index, len(trajectory) - window + 1):
+        if np.all(trajectory[i:i + window, 0] > trajectory[i:i + window, 1]):
+            return times[i] - input_end_time  # Recovery time is relative to input end
+    return np.nan  # Return NaN if recovery does not occur within the simulation        
