@@ -45,7 +45,7 @@ if __name__ == "__main__":
 # point with y1 > y2 could only be a short random fluctuation. If the system
 # does not return during the simulation, the recovery time is recorded as NaN.
 # This is an abstract model measure and does not represent hours or days.
-def recovery_time_after_negative_input(times, trajectory, start, duration, window=100):
+def recovery_time_after_negative_input(times, trajectory, start, duration, window=1000):
     input_end_time = start + duration
     # Find the index where the input ends
     end_index = np.searchsorted(times, input_end_time)
@@ -54,3 +54,31 @@ def recovery_time_after_negative_input(times, trajectory, start, duration, windo
         if np.all(trajectory[i:i + window, 0] > trajectory[i:i + window, 1]):
             return times[i] - input_end_time  # Recovery time is relative to input end
     return np.nan  # Return NaN if recovery does not occur within the simulation        
+
+# We classify the recovery outcome into three groups. A trajectory has never
+# recovered if it does not return to the positive basin for the required
+# window. Recovery is persistent if the final window also remains in the
+# positive basin. Otherwise, recovery was temporary and the system later
+# returned to the negative basin.
+def classify_recovery_outcome(times, trajectory, start, duration, window=1000):
+    recovery_time = recovery_time_after_negative_input(
+        times,
+        trajectory,
+        start,
+        duration,
+        window
+    )
+
+    if np.isnan(recovery_time):
+        return "never recovered"
+
+    final_window_is_positive = np.all(
+        trajectory[-window:, 0]
+        >
+        trajectory[-window:, 1]
+    )
+
+    if final_window_is_positive:
+        return "persistent recovery"
+    else:
+        return "temporary recovery"

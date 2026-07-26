@@ -10,7 +10,7 @@ SRC_PATH = PROJECT_ROOT / "src"
 sys.path.insert(0, str(SRC_PATH))
 import numpy as np
 from aim.simulation import euler_maruyama
-from aim.metrics import classify_basin, does_trajectory_end_in_negative_basin, deepest_m_into_negative, recovery_time_after_negative_input
+from aim.metrics import classify_basin, does_trajectory_end_in_negative_basin, deepest_m_into_negative, recovery_time_after_negative_input, classify_recovery_outcome
 from aim.inputs import rectangular_negative_input
 
 #%%
@@ -106,6 +106,7 @@ strong_switches = []
 control_recovery_times = []
 weak_recovery_times = []
 strong_recovery_times = []
+strong_recovery_outcomes = []
 
 #we use the same seed for the three conditions in every run
 for i in range(N_runs):
@@ -161,7 +162,8 @@ for i in range(N_runs):
             times_control,
             trajectory_control,
             start=2,
-            duration=3
+            duration=3,
+            window=1000
         )
     )
 
@@ -170,7 +172,8 @@ for i in range(N_runs):
             times_weak,
             trajectory_weak,
             start=2,
-            duration=3
+            duration=3,
+            window=1000
         )
     )
 
@@ -179,7 +182,18 @@ for i in range(N_runs):
             times_strong,
             trajectory_strong,
             start=2,
-            duration=3
+            duration=3,
+            window=1000
+        )
+    )
+
+    strong_recovery_outcomes.append(
+        classify_recovery_outcome(
+            times_strong,
+            trajectory_strong,
+            start=2,
+            duration=3,
+            window=1000
         )
     )
 
@@ -206,8 +220,29 @@ number_not_recovered = np.sum(
     np.isnan(strong_recovery_times)
 )
 
+number_persistent_recovery = np.sum(
+    np.array(strong_recovery_outcomes)
+    ==
+    "persistent recovery"
+)
+
+number_temporary_recovery = np.sum(
+    np.array(strong_recovery_outcomes)
+    ==
+    "temporary recovery"
+)
+
+number_never_recovered = np.sum(
+    np.array(strong_recovery_outcomes)
+    ==
+    "never recovered"
+)
+
 print("Strong-input trajectories recovered:", number_recovered)
 print("Strong-input trajectories not recovered:", number_not_recovered)
+print("Persistent recovery:", number_persistent_recovery)
+print("Temporary recovery:", number_temporary_recovery)
+print("Never recovered:", number_never_recovered)
 
 
 # %%
