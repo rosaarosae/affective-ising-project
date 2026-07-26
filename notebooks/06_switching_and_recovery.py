@@ -63,10 +63,12 @@ for threshold in np.linspace(-1, 1, 500):
     fraction_below_threshold.append(
         np.sum(np.array(deepest_m_values) < threshold) / N_runs
     )
+plt.figure()
 plt.plot(np.linspace(-1, 1, 500), fraction_below_threshold, marker='o', ms=2, ls='')
 plt.title("Fraction of trajectories with deepest m below threshold")
 plt.xlabel("Threshold")
 plt.ylabel("Fraction")
+plt.ylim(0, 1)
     
 # %%
 # now we compare the control, weak input and strong input with several random seeds
@@ -194,7 +196,18 @@ print("Weak input switching probability:", weak_probability)
 print("Strong input switching probability:", strong_probability)
 print("Mean control recovery time:", np.nanmean(control_recovery_times))
 print("Mean weak-input recovery time:", np.nanmean(weak_recovery_times))
-print("Mean strong-input recovery time:", np.nanmean(strong_recovery_times))
+print("Mean observed strong-input recovery time:", np.nanmean(strong_recovery_times))
+
+number_recovered = np.sum(
+    ~np.isnan(strong_recovery_times)
+)
+
+number_not_recovered = np.sum(
+    np.isnan(strong_recovery_times)
+)
+
+print("Strong-input trajectories recovered:", number_recovered)
+print("Strong-input trajectories not recovered:", number_not_recovered)
 
 
 # %%
