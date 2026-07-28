@@ -40,11 +40,11 @@ This repository currently contains documentation and project structure only. The
 - [x] Reproduce the free-energy function and gradient
 - [x] Derive or reproduce the stationary density
 - [x] Implement the Euler–Maruyama simulation
-- [ ] Validate simulated stationary distributions against theory
-- [ ] Add temporary negative external inputs
-- [ ] Estimate switching probability
-- [ ] Measure recovery time
-- [ ] Prepare final figures, tables, and presentation
+- [x] Validate simulated stationary distributions against theory
+- [x] Add temporary negative external inputs
+- [x] Estimate switching probability
+- [x] Measure recovery time
+- [x] Prepare final figures, tables, and presentation
 
 ## Installation
 
